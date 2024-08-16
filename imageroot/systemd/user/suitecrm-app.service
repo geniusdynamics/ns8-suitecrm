@@ -21,6 +21,7 @@ ExecStartPre=-runagent discover-smarthost
 ExecStart=/usr/bin/podman run --conmon-pidfile %t/suitecrm-app.pid \
     --cidfile %t/suitecrm-app.ctr-id --cgroups=no-conmon \
     --pod-id-file %t/suitecrm.pod-id --replace -d --name  suitecrm-app \
+    --volume suitecrm_data:/bitnami/suitecrm/:Z \
     --env-file=%S/state/suitecrm-db.env \
     ${SUITECRM_IMAGE}
 ExecStop=/usr/bin/podman stop --ignore --cidfile %t/suitecrm-app.ctr-id -t 10
