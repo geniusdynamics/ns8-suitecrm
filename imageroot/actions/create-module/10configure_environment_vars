@@ -35,7 +35,20 @@ mariadb_config = {
 }
 
 agent.write_envfile("database.env", mariadb_config)
+#  SUITECRM_DATABASE_HOST=mariadb
+#       - SUITECRM_DATABASE_PORT_NUMBER=3306
+#       - SUITECRM_DATABASE_USER=bn_suitecrm
+#       - SUITECRM_DATABASE_NAME=bitnami_suitecrm
+#       - SUITECRM_DATABASE_PASSWORD=bitnami123
 
+suite_crm = {
+    "SUITECRM_DATABASE_HOST": "mariadb-app",
+    "SUITECRM_DATABASE_PORT_NUMBER": "3306",
+    "SUITECRM_DATABASE_USER": MARIADB_USER,
+    "SUITECRM_DATABASE_NAME": MARIADB_DATABASE,
+    "SUITECRM_DATABASE_PASSWORD": MARIADB_PASSWORD
+}
+agent.write_envfile("suitecrm-db.env", suite_crm)
 
 # just before starting systemd unit
 #agent.dump_env()
