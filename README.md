@@ -54,6 +54,12 @@ To uninstall the instance:
 
     remove-module --no-preserve suitecrm1
 
+## Update
+
+```shell
+api-cli run update-module --data '{"module_url":"ghcr.io/geniusdynamics/suitecrm:latest","instances":["suitecrm1"],"force":true}'
+```
+
 ## Smarthost setting discovery
 
 Some configuration settings, like the smarthost setup, are not part of the
