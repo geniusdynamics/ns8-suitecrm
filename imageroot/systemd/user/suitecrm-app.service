@@ -10,20 +10,18 @@ After=suitecrm.service mariadb-app.service
 
 [Service]
 Environment=PODMAN_SYSTEMD_UNIT=%n
-EnvironmentFile=%S/state/environment
-EnvironmentFile=-%S/state/smarthost.env
-WorkingDirectory=%S/state
+EnvironmentFile=%E/state/environment
+WorkingDirectory=%E/state
 Restart=always
 TimeoutStopSec=70
 ExecStartPre=/bin/mkdir -p tmp
 ExecStartPre=/bin/rm -f %t/suitecrm-app.pid %t/suitecrm-app.ctr-id
-ExecStartPre=-runagent discover-smarthost
 ExecStart=/usr/bin/podman run --conmon-pidfile %t/suitecrm-app.pid \
     --cidfile %t/suitecrm-app.ctr-id --cgroups=no-conmon \
     --pod-id-file %t/suitecrm.pod-id --replace -d --name  suitecrm-app \
     --volume suitecrm_data:/bitnami/suitecrm/:Z \
-    --env-file=%S/state/suitecrm-db.env \
-    --env-file=%S/state/suitecrm.env \
+    --env-file=%E/state/suitecrm-db.env \
+    --env-file=%E/state/suitecrm.env \
     ${SUITECRM_IMAGE}
 ExecStop=/usr/bin/podman stop --ignore --cidfile %t/suitecrm-app.ctr-id -t 10
 ExecReload=/usr/bin/podman kill -s HUP suitecrm-app
