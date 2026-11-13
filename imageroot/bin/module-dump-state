@@ -11,7 +11,7 @@ if ! systemctl --user -q is-active suitecrm.service; then
     exit 0
 fi
 
-podman exec mariadb-app mysqldump \
+podman exec mariadb-app mariadb-dump \
         --databases suitecrm \
         --default-character-set=utf8mb4 \
         --skip-dump-date \

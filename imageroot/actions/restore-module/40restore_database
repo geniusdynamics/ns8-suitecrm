@@ -14,7 +14,7 @@ mv -v suitecrm.sql initdb.d
 #do the bash file to restore and exit once done
 cat - >initdb.d/zz_suitecrm_restore.sh <<'EOS'
 # Print additional information:
-mysql --version
+mariadb --version
 # The script is sourced, override entrypoint args and exit:
 set -- true
 docker_temp_server_stop
