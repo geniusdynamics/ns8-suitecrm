@@ -1,0 +1,54 @@
+#
+# SuiteCRM application image: the official SuiteCRM release on the official
+# PHP Apache image. It replaces docker.io/bitnamilegacy/suitecrm, frozen
+# since Bitnami stopped publishing free versioned images.
+#
+FROM docker.io/library/php:8.3.36-apache
+
+# Official release archive of salesagility/SuiteCRM-Core. To update it, change
+# both the version and the SHA-256 sum of SuiteCRM-<version>.zip.
+ARG SUITECRM_VERSION=8.10.2
+ARG SUITECRM_SHA256=ac4693d10ea2d6cd20b3256098781d134599d88878fb24e8dc127038d624f5a8
+
+# PHP extensions required by SuiteCRM 8. The build dependencies are removed
+# afterwards, keeping only the libraries the extensions link to (same
+# technique as the official WordPress image).
+RUN set -eux; \
+    savedAptMark="$(apt-mark showmanual)"; \
+    apt-get update; \
+    apt-get install -y --no-install-recommends \
+        libfreetype6-dev libicu-dev libjpeg62-turbo-dev libldap2-dev \
+        libpng-dev libxml2-dev libzip-dev unzip; \
+    docker-php-ext-configure gd --with-freetype --with-jpeg; \
+    docker-php-ext-install -j"$(nproc)" bcmath gd intl ldap mysqli opcache pdo_mysql soap zip; \
+    apt-mark auto '.*' > /dev/null; \
+    apt-mark manual $savedAptMark unzip; \
+    find /usr/local/lib/php/extensions -type f -name '*.so' -exec ldd '{}' ';' \
+        | awk '/=>/ { so = $(NF-1); if (index(so, "/usr/local/") == 1) { next }; gsub("^/(usr/)?", "", so); print so }' \
+        | sort -u | xargs -r dpkg-query --search | cut -d: -f1 | sort -u | xargs -rt apt-mark manual; \
+    apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false; \
+    rm -rf /var/lib/apt/lists/*
+
+# The code is copied into the suitecrm-data volume on the first start
+RUN set -eux; \
+    curl -fsSL -o /tmp/suitecrm.zip \
+        "https://github.com/salesagility/SuiteCRM-Core/releases/download/v${SUITECRM_VERSION}/SuiteCRM-${SUITECRM_VERSION}.zip"; \
+    echo "${SUITECRM_SHA256}  /tmp/suitecrm.zip" | sha256sum -c -; \
+    mkdir -p /usr/src/suitecrm; \
+    unzip -q /tmp/suitecrm.zip -d /usr/src/suitecrm; \
+    rm -f /tmp/suitecrm.zip; \
+    chown -R www-data:www-data /usr/src/suitecrm
+
+COPY php.ini /usr/local/etc/php/conf.d/suitecrm.ini
+COPY apache-site.conf /etc/apache2/sites-available/000-default.conf
+COPY docker-entrypoint.sh /usr/local/bin/suitecrm-entrypoint
+
+# Listen on 8080; behind Traefik, trust X-Forwarded-Proto for HTTPS
+RUN set -eux; \
+    sed -i 's/^Listen 80$/Listen 8080/' /etc/apache2/ports.conf; \
+    a2enmod rewrite headers setenvif; \
+    chmod 0755 /usr/local/bin/suitecrm-entrypoint
+
+EXPOSE 8080
+ENTRYPOINT ["/usr/local/bin/suitecrm-entrypoint"]
+CMD ["apache2-foreground"]

@@ -1,0 +1,22 @@
+#!/bin/bash
+
+#
+# Copyright (C) 2026 Genius Dynamics
+# SPDX-License-Identifier: GPL-3.0-or-later
+#
+
+# wait-ready CONTAINER COMMAND [ARG...]
+#
+# Used by ExecStartPost: wait until COMMAND succeeds inside CONTAINER, so
+# that the unit reports started only when the service answers. Give up if
+# the container stops.
+
+container=$1
+shift
+until podman exec "${container}" "$@" >/dev/null 2>&1; do
+    if [ "$(podman container inspect -f '{{.State.Running}}' "${container}" 2>/dev/null)" != "true" ]; then
+        echo "${container} is not running" >&2
+        exit 1
+    fi
+    sleep 3
+done

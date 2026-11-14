@@ -17,6 +17,18 @@ reponame="suitecrm"
 # Node.js 25+ no longer ships Corepack, install it from npm
 # renovate: datasource=npm packageName=corepack
 corepack_version=0.36.0
+# renovate: datasource=docker packageName=docker.io/library/mariadb
+MARIADB_VERSION=11.4.13
+
+# SuiteCRM application image, built from the official SuiteCRM release on the
+# official PHP image (suitecrm/Containerfile): no maintained official SuiteCRM
+# image exists, and docker.io/bitnamilegacy/suitecrm no longer gets updates.
+# Exposed to the units as ${SUITECRM_APP_IMAGE} through org.nethserver.images.
+app_image="${repobase}/suitecrm-app:${IMAGETAG:-latest}"
+echo "Build the SuiteCRM application image..."
+podman build --force-rm --pull=missing -t "${app_image}" -f suitecrm/Containerfile suitecrm/
+podman tag "${app_image}" "${repobase}/suitecrm-app"
+images+=("${repobase}/suitecrm-app")
 
 # Create a new empty container image
 container=$(buildah from scratch)
@@ -42,7 +54,6 @@ buildah add "${container}" ui/dist /ui
 # Select you image(s) with the label org.nethserver.images
 # ghcr.io/xxxxx is the GitHub container registry or your own registry or docker.io for Docker Hub
 # The image tag is set to latest by default, but can be overridden with the IMAGETAG environment variable
-# --label="org.nethserver.images=docker.io/mariadb:13.0.2 docker.io/roundcube/roundcubemail:1.6.4-apache"
 # rootfull=0 === rootless container
 # tcp-ports-demand=1 number of tcp Port to reserve , 1 is the minimum, can be udp or tcp
 buildah config --entrypoint=/ \
@@ -50,7 +61,7 @@ buildah config --entrypoint=/ \
     --label="org.nethserver.tcp-ports-demand=1" \
     --label="org.nethserver.rootfull=0" \
     --label="org.nethserver.min-core=3.0.0" \
-    --label="org.nethserver.images=docker.io/mariadb:13.0.2 docker.io/bitnamilegacy/suitecrm:8.8.1" \
+    --label="org.nethserver.images=docker.io/mariadb:${MARIADB_VERSION} ${app_image}" \
     "${container}"
 # Commit the image
 buildah commit "${container}" "${repobase}/${reponame}"

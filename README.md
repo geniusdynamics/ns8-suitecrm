@@ -36,8 +36,15 @@ EOF
 
 | Image | Version |
 |---|---|
-| `docker.io/mariadb` | `13.0.2` |
-| `docker.io/bitnami/suitecrm` | `8` |
+| `docker.io/mariadb` | `11.4.13` |
+| `ghcr.io/geniusdynamics/suitecrm-app` | SuiteCRM `8.10.2` on `docker.io/library/php:8.3.36-apache`, built from `suitecrm/Containerfile` |
+
+No maintained official SuiteCRM image exists, and `docker.io/bitnamilegacy/suitecrm`
+no longer gets updates, so the module builds its own application image from the
+official SuiteCRM release archive. On the first start the image copies SuiteCRM into
+the `suitecrm-data` volume and installs it; the `admin` password is in
+`state/secrets.env`. A newer image does not replace the code in the volume: upgrade
+SuiteCRM with its own upgrade procedure.
 
 ## Network and access
 
@@ -49,8 +56,9 @@ EOF
 
 The following paths are included in the NS8 backup (`imageroot/etc/state-include.conf`):
 
+- `state/secrets.env`
 - `state/suitecrm.sql`
-- `volumes/suitecrm-app`
+- `volumes/suitecrm-data`
 
 ## Services
 

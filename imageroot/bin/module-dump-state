@@ -5,17 +5,13 @@
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
-set -e
+# Runs in the state directory before the backup
+set -e -o pipefail
 
-if ! systemctl --user -q is-active suitecrm.service; then
-    exit 0
-fi
-
-podman exec mariadb-app mariadb-dump \
+podman exec mariadb-app sh -c 'exec mariadb-dump -uroot -p"${MARIADB_ROOT_PASSWORD}" \
         --databases suitecrm \
         --default-character-set=utf8mb4 \
         --skip-dump-date \
-        --ignore-table=mysql.event \
         --single-transaction \
         --quick \
-        --add-drop-table  > suitecrm.sql
+        --add-drop-table' > suitecrm.sql
