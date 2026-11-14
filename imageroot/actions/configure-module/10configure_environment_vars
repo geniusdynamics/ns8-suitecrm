@@ -1,23 +1,32 @@
 #!/usr/bin/env python3
 
 #
-# Copyright (C) 2022 Nethesis S.r.l.
+# Copyright (C) 2026 Genius Dynamics
 # SPDX-License-Identifier: GPL-3.0-or-later
 #
 
 import json
 import sys
+
 import agent
 
-# Try to parse the stdin as JSON.
-# If parsing fails, output everything to stderr
-data = json.load(sys.stdin)
+request = json.load(sys.stdin)
+host = request["host"]
 
-SUITECRM_SKIP_BOOTSTRAP = data.get('SUITECRM_SKIP_BOOTSTRAP', "true")
+# Settings that are not secret. The passwords come from secrets.env, see the
+# systemd units. The containers share the pod network: MariaDB is reached on
+# 127.0.0.1.
+agent.write_envfile("suitecrm.env", {
+    "SUITECRM_DB_HOST": "127.0.0.1",
+    "SUITECRM_DB_PORT": "3306",
+    "SUITECRM_DB_NAME": "suitecrm",
+    "SUITECRM_DB_USER": "suitecrm",
+    "SUITECRM_SITE_URL": f"https://{host}",
+    "SUITECRM_ADMIN_USER": "admin",
+})
 
-suite_crm = {
-    "SUITECRM_SKIP_BOOTSTRAP": SUITECRM_SKIP_BOOTSTRAP
-}
-agent.write_envfile("suitecrm.env", suite_crm)
-
-#agent.dump_env()
+agent.write_envfile("mariadb.env", {
+    "MARIADB_DATABASE": "suitecrm",
+    "MARIADB_USER": "suitecrm",
+    "MARIADB_AUTO_UPGRADE": "1",
+})

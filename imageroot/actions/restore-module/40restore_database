@@ -8,13 +8,13 @@
 set -e -o pipefail
 exec 1>&2 # Redirect any output to the journal (stderr)
 
+# The backup holds secrets.env: restore the database with the same passwords
+secret() { grep -m1 "^$1=" secrets.env | cut -d= -f2-; }
+
 # Prepare an initialization script that restores the dump file
 mkdir -vp initdb.d
 mv -v suitecrm.sql initdb.d
-#do the bash file to restore and exit once done
 cat - >initdb.d/zz_suitecrm_restore.sh <<'EOS'
-# Print additional information:
-mysql --version
 # The script is sourced, override entrypoint args and exit:
 set -- true
 docker_temp_server_stop
@@ -24,18 +24,15 @@ EOS
 # once we exit we remove initdb.d
 trap 'rm -rfv initdb.d/' EXIT
 
-# we start a container to initiate a database and load the dump
-# at the end of suitecrm_restore.sh the dump is loaded and
-# we exit the container
+# The MariaDB entrypoint loads the dump, then the script stops the container
 podman run \
   --rm \
-  --interactive \
   --network=none \
-  --volume=./initdb.d:/docker-entrypoint-initdb.d:z \
-  --volume mysql-data:/var/lib/mysql/:Z \
-  --env MARIADB_ROOT_PASSWORD=Nethesis,1234 \
-  --env MARIADB_DATABASE=suitecrm \
-  --env MARIADB_USER=suitecrm \
-  --env MARIADB_PASSWORD=suitecrm \
+  --volume=./initdb.d:/docker-entrypoint-initdb.d:Z \
+  --volume=mysql-data:/var/lib/mysql/:Z \
+  --env=MARIADB_ROOT_PASSWORD="$(secret SUITECRM_DB_ROOT_PASSWORD)" \
+  --env=MARIADB_DATABASE=suitecrm \
+  --env=MARIADB_USER=suitecrm \
+  --env=MARIADB_PASSWORD="$(secret SUITECRM_DB_PASSWORD)" \
   --replace --name=restore_db \
-  ${MARIADB_IMAGE}
+  "${MARIADB_IMAGE}"

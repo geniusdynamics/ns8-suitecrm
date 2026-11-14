@@ -14,7 +14,8 @@ request = json.load(sys.stdin)
 renv = request['environment']
 
 configure_retval = agent.tasks.run(agent_id=os.environ['AGENT_ID'], action='configure-module', data={
-    "lets_encrypt": renv["TRAEFIK_LETS_ENCRYPT"] == "True",
+    # Never restore Let's Encrypt: the DNS may not point to this node yet
+    "lets_encrypt": False,
     "host": renv["TRAEFIK_HOST"],
     "http2https": renv["TRAEFIK_HTTP2HTTPS"] == "True",
 })

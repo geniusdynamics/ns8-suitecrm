@@ -9,8 +9,9 @@ set -e
 # Redirect any output to the journal (stderr)
 exec 1>&2
 
-# If the control reaches this step, the service can be enabled and started
-
-
+# If the control reaches this step, the service can be enabled and started.
+# List every unit: restarting the pod alone does not restart its containers.
+# suitecrm-app reports started only when Apache answers, so on the first run
+# this waits for the SuiteCRM installation.
 systemctl --user enable suitecrm.service
-systemctl --user restart suitecrm.service
+systemctl --user restart suitecrm.service mariadb-app.service suitecrm-app.service
